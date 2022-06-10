@@ -52,13 +52,22 @@ def comments():
 
 def device_range():
     '''Creates a df with all devices inside determined range. Ex: B0 to B3FFF'''
+    pass
+    
+
 if __name__ == "__main__":
     #syntax: engine = create_engine("mysql://USER:PASSWORD@HOST/DATABASE")
     engine = sqlalchemy.create_engine("mysql+pymysql://sebasalvarez13:BlueYeti27@localhost/tags")
     
     df1 = comments()
     #Convert df to SQL table
-    df1.to_sql('comments_B', con = engine, if_exists = 'replace', index = False)
+    df1.to_sql('B_comments', con = engine, if_exists = 'replace', index = False)
+    print('Dataframe upload to database')
+
+    #Defining devices type and range
+    link_relay = Device(start='0x0', end='0x3FFF', device_type='B')
+    df2 = link_relay.address_df()
+    df2.to_sql('B_range', con = engine, if_exists = 'replace', index = False)
     print('Dataframe upload to database')
 
 
