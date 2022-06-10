@@ -19,7 +19,7 @@ def csv_to_df(file_path):
            
 
 def create_csv(df, filename):
-    path = '/mnt/c/Users/SA55851/Desktop/Projects/Development/Tag consolidation/csv-files/tags/{}'.format(filename)
+    path = '/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/tags/{}'.format(filename)
     header = df.head()
 
     if os.path.exists(path):
@@ -38,10 +38,33 @@ def remove_zero(device_str):
     else:
         return(device_str)
 
+def comments():
+    '''Transforms COMMENT file exported from gxworks2 and uploads it to sql database'''
 
+    file_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/comments/COMMENT_B.csv"
+    #Open unicode csv file from GX Works program and convert to dataframe
+    f = io.open(file_path, mode = 'r', encoding = 'utf-16')
+    df = pandas.read_csv(f, skiprows=1, delimiter='\t')
+    #Rename column names
+    df.rename({'Device Name': 'device_name', 'Comment': 'comment'}, axis=1, inplace=True)
+
+    return(df)
+
+def device_range():
+    '''Creates a df with all devices inside determined range. Ex: B0 to B3FFF'''
 if __name__ == "__main__":
+    #syntax: engine = create_engine("mysql://USER:PASSWORD@HOST/DATABASE")
+    engine = sqlalchemy.create_engine("mysql+pymysql://sebasalvarez13:BlueYeti27@localhost/tags")
+    
+    df1 = comments()
+    #Convert df to SQL table
+    df1.to_sql('comments_B', con = engine, if_exists = 'replace', index = False)
+    print('Dataframe upload to database')
+
+
+    """
     #Source path for csv files
-    source_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/Tag consolidation/csv-files/"
+    source_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/"
 
     source_files_list = os.listdir(source_path)
 
@@ -82,27 +105,33 @@ if __name__ == "__main__":
 
                 if device_str_fltrd.startswith('B') and device_str_fltrd not in link_relay_list:
                     link_relay_list.append(device_str_fltrd) 
+                '''
                 elif device_str_fltrd.startswith('M') and device_str_fltrd not in internal_relay_list:
                     internal_relay_list.append(device_str_fltrd)
                 elif device_str_fltrd.startswith('X') and device_str_fltrd not in inputs_list:
                     inputs_list.append(device_str_fltrd)
                 elif device_str_fltrd.startswith('Y') and device_str_fltrd not in outputs_list:
                     outputs_list.append(device_str_fltrd)        
+                '''
         else:
             print('Not csv file')
 
     #Sort lists
     link_relay_list.sort()
+    '''
     internal_relay_list.sort()
     inputs_list.sort()
     outputs_list.sort()
-
-    #Device address range
+    '''
+    #Defining devices type and range
     link_relay = Device(start='0x0', end='0x3FFF', device_type='B')
+    '''    
     internal_relay = Device(start='0x0', end='0x20479', device_type='M')
     inputs = Device(start='0x0', end='0x1FFF', device_type='X')
     outputs = Device(start='0x0', end='0x1FFF', device_type='Y')
-
+    '''
+    #Creating df for each device type and all possible tags
+    print(link_relay.device_df)
     #Device dictionary
     devices_dict = {
         'id': (x for x in range(1, 16385)),
@@ -114,8 +143,8 @@ if __name__ == "__main__":
     #df = pandas.DataFrame.from_dict(devices_dict, orient='index')
     df = pandas.DataFrame(devices_dict)
     #df = df.transpose()
-    print(df)
-    create_csv(df, 'all_addresses.csv')
+    #print(df)
+    #create_csv(df, 'all_addresses.csv')
 
     #Used Devices dictionary
     used_devices_dict = {
@@ -129,11 +158,12 @@ if __name__ == "__main__":
     print(df2)
     create_csv(df2, 'used_addresses.csv')
 
-    
-
+    '''
     #Convert df to SQL table
     df.to_sql('ge6_ac1_available_tags', con = engine, if_exists = 'replace', index = False)
     df2.to_sql('ge6_ac1_used_tags', con = engine, if_exists = 'replace', index = False)
     print('Dataframe upload to database')
+    '''
 
+    """
                  
