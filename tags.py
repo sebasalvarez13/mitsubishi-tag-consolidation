@@ -39,10 +39,18 @@ def remove_zero(device_str):
     else:
         return(device_str)
 
-
-def comments():
+def remove_k(device_str):
+    #Use regex to remove 'K0' from device name. E.g: K4B520 --> B520
+    x = re.search("(^[K][0-9]+)([B][0-9A-Z]*)", device_str)
+    if x != None:
+        y = str(x.group(2))
+        print(y)
+        return(y)
+    
+    
+def comments(device_type):
     '''Transforms COMMENT file exported from gxworks2 and uploads it to sql database'''
-    file_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/comments/COMMENT_B.csv"
+    file_path = f"/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/comments/COMMENT_{device_type}.csv"
     #Open unicode csv file from GX Works program and convert to dataframe
     f = io.open(file_path, mode = 'r', encoding = 'utf-16')
     df = pandas.read_csv(f, skiprows=1, delimiter='\t')
@@ -56,8 +64,7 @@ def used_devices():
     '''Generates a list of devices being used'''
     #Define lists for bits
     B_devices_list = []
-    #Define dictionary to append the created list
-    devices_dict = {}
+    K_devices_list = []
 
     #Source path for csv files
     source_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/"
@@ -84,13 +91,20 @@ def used_devices():
                 device_str_fltrd = remove_zero(device_str)
 
                 if device_str_fltrd.startswith('B') and device_str_fltrd not in B_devices_list:
-                    B_devices_list.append(device_str_fltrd) 
+                    B_devices_list.append(device_str_fltrd)
+                elif device_str_fltrd.startswith('K') and device_str_fltrd not in K_devices_list and len(device_str_fltrd) > 3:
+                    K_devices_list.append(device_str_fltrd)
 
-        
         else:
             print('Not csv file')
 
+    for device in K_devices_list:
+        B_device = remove_k(device)
+        if B_device != None and B_device not in B_devices_list:
+            B_devices_list.append(B_device)
+            
     B_devices_list.sort()
+    K_devices_list.sort()
 
     #Used devices dictionary
     used_devices_dict = {
@@ -102,33 +116,35 @@ def used_devices():
     return(df)
 
 
-def json_to_csv():
+def json_to_csv(device_type):
     path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/complete"
-    df = pandas.read_json(f'{path}/B_complete.json')
-    df.to_csv(f'{path}/B_complete.csv', mode = 'w', index=False, header=True, encoding = 'utf-16', sep='\t')
+    df = pandas.read_json(f'{path}/{device_type}_complete.json')
+    df.to_csv(f'{path}/{device_type}_complete.csv', mode = 'w', index=False, header=True, encoding = 'utf-16', sep='\t')
 
 
 if __name__ == "__main__":
     #syntax: engine = create_engine("mysql://USER:PASSWORD@HOST/DATABASE")
     engine = sqlalchemy.create_engine("mysql+pymysql://sebasalvarez13:BlueYeti27@localhost/tags")
+
+    device_type ='B'
     
     #Get B devices with comments. Used or not used
-    df1 = comments()
-    df1.to_sql('B_comments', con = engine, if_exists = 'replace', index = False)
+    df1 = comments(device_type)
+    df1.to_sql(f'{device_type}_comments', con = engine, if_exists = 'replace', index = False)
     print('Dataframe upload to database')
 
     #Defining devices type and range
     link_relay = Device(start='0x0', end='0x3FFF', device_type='B')
     df2 = link_relay.address_df()
-    df2.to_sql('B_range', con = engine, if_exists = 'replace', index = False)
+    df2.to_sql(f'{device_type}_range', con = engine, if_exists = 'replace', index = False)
     print('Dataframe upload to database')
 
     #Get used B devices
     df3 = used_devices()
-    df3.to_sql('B_used_devices', con = engine, if_exists = 'replace', index = False)
+    df3.to_sql(f'{device_type}_used_devices', con = engine, if_exists = 'replace', index = False)
     print('Dataframe upload to database')
 
     #Convert exported table from sql (json) to csv
-    json_to_csv()
+    json_to_csv(device_type)
 
                  
