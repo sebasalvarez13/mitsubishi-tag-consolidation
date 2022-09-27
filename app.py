@@ -38,6 +38,21 @@ def update_tags():
     return render_template('update.html') 
 
 
+@app.route('/deletetag', methods = ['GET', 'POST'])
+def delete_tags():
+    if request.method == 'POST':
+        device = request.form['device']
+        query = "UPDATE B_complete SET comment = '', status = 'Not Used' WHERE device_name = %s"
+
+        #Create sql connection
+        connection = engine.connect()
+
+        connection.execute(query, (device))
+
+        print('tag comment deleted')
+
+    return render_template('delete.html') 
+
 
 
 if __name__ == "__main__":
