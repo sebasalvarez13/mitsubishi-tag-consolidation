@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+<!-- Give content to the block title -->
+{% block title %}Mitsubishi Devices{% endblock %}
+
+{% block content %}
+<!-- Delete tag comment -->
+<form action="/deletetag" autocomplete="on" method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="Device" class="form-label">Device</label>
+        <input type="text" class="form-control" id="Device" name="device">
+
+    </div>
+
+    <button type="submit" class="btn btn-primary">Delete</button>
+</form>
+
+{% endblock %}
