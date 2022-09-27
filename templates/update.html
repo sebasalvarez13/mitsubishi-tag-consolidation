@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+<!-- Give content to the block title -->
+{% block title %}Mitsubishi Tags{% endblock %}
+
+{% block content %}
+<!-- New user registration form -->
+<form action="/updatetag" autocomplete="on" method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="Device" class="form-label">Device</label>
+        <input type="text" class="form-control" id="Device" name="device">
+        <!--div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div-->
+    </div>
+
+    <div class="mb-3">
+        <label for="New Comment" class="form-label">New Comment</label>
+        <input type="text" class="form-control" id="NewComment" name="new_comment">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+</form>
+
+{% endblock %}
