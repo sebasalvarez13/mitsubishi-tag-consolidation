@@ -1,78 +1,53 @@
-import csv
 import os
-import pandas
+import pandas as pd
 import sqlalchemy
 import pymysql
-import io
+import time
 import re
-from hexadecimal import *
-from device import Device
 
 
-def csv_to_df(file_path):
-        '''Function takes a .csv file and returns a df'''
-        with open(file_path, 'rb') as csv_file:
-            #For CPU logger csv files, skip the first 3 rows to get the actual header row and data
-            df = pandas.read_csv(csv_file, skiprows=1)
-        
-        return(df)
-           
-
-def create_csv(df, filename):
-    path = '/mnt/c/Users/SA55851/Desktop/Projects/Development/Tag consolidation/csv-files/tags/{}'.format(filename)
-    header = df.head()
-
-    if os.path.exists(path):
-        df.to_csv(path, mode = 'w', index=False, header=True)
-    else:
-        header.to_csv(path, index=False)
-        df.to_csv(path, mode = 'w', index=False, header=True)
+engine = sqlalchemy.create_engine("mysql+pymysql://sebasalvarez13:BlueYeti27@localhost/tags")
 
 
-def remove_zero(device_str):
-    #Use regex to remove '0' between two letters. E.g: B0A3 --> BA3
-    x = re.search("(^[A-Z])[0]([A-Z])", device_str)
-    if x != None:
-        y = re.sub("([A-Z])[0]([A-Z])", str(x.group()[0] + x.group()[2]), device_str)
-        return(y)
-    else:
-        return(device_str)
+def comments():
+    """Open unicode csv file from GX Works program and convert to dataframe. Then upload the dataframe as a table to mysql database"""
 
-
-if __name__ == "__main__":
+    #file_path = f"/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/comments/ge6_cc_ac1_comments.csv"
+    
+    #f = io.open(file_path, mode = 'r', encoding = 'utf-16')--THIS ONE WORKS
+    #f = io.open(file_path, mode = 'rb', encoding = 'utf-8') #ValueError: binary mode doesn't take an encoding argument
+    #f = io.open(file_path, mode = 'r', encoding = 'utf-8') #UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+    #f = io.open(file_path, mode = 'rb') #UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+    
     #Source path for csv files
-    source_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/Tag consolidation/csv-files/comments/"
-
+    source_path = "/mnt/c/Users/SA55851/Desktop/Projects/Development/tag-consolidation/csv-files/comments/"
     source_files_list = os.listdir(source_path)
 
-    #syntax: engine = create_engine("mysql://USER:PASSWORD@HOST/DATABASE")
-    engine = sqlalchemy.create_engine("mysql+pymysql://sebasalvarez13:BlueYeti27@localhost/tags")
-    
-    source_files_list = os.listdir(source_path)
-    
     for file in source_files_list:
         if file.endswith(".csv") or file.endswith(".CSV"):
-            file_path = "{source_path}{file}".format(source_path = source_path, file = file)
-            print(file_path)
-            
+            file_path = f"{source_path}/{file}"
+
             #Open unicode csv file from GX Works program and convert to dataframe
-            f = io.open(file_path, mode = 'r', encoding = 'utf-16')
-            df = pandas.read_csv(f, skiprows=1, delimiter='\t')
+            with open(file_path, encoding = 'utf-16') as f:
+                df = pd.read_csv(f, skiprows=1, delimiter='\t')
+                print("csv file read and convert to dataframe succesfully")
             
-            for index, row in df.iterrows():
-                device_str = str(row['Device Name'])
-                #Use regex to remove '0' between two letters. E.g: B0A3 --> BA3
-                row['Device Name'] = remove_zero(device_str)
+            #Rename column names
+            df.rename({'Device Name': 'device_name', 'Comment': 'comment'}, axis=1, inplace=True)
+            
+            """Upload dataframe to mysql database"""
+            #Removes the .csv extension of file name to generate the table name
+            match = re.search("(.+)(.csv)", file)
+            table_name = match.group(1)
+            #Convert dataframe to sql table
+            df.to_sql(table_name, con = engine, if_exists = 'replace', index = False)
+            print('Dataframe upload to database')
 
-        else:
-            print('Not csv file')
+            
+
+if __name__ == "__main__":
+    start_time = time.time()
+ 
+    comments()
     
-    #Rename column name
-    df = df.rename(columns={'Device Name': 'device_name', 'Comment':'comment'})
-    create_csv(df, 'tag_comments.csv')
-  
-    #Convert df to SQL table
-    df.to_sql('ge6_ac1_tag_comments', con = engine, if_exists = 'replace', index = False)
-    print('Dataframe upload to database')
-
-                 
+    print("--- %s seconds ---" % (time.time() - start_time)) 
