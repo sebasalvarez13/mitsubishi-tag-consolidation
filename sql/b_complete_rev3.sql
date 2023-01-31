@@ -11,7 +11,10 @@ CREATE TABLE B_complete_3 AS(
 		t3.device_name,
 		t3.plc,
 		t4.comment,
-		t4.device_status
+		CASE
+			WHEN t4.device_name IS NULL THEN 'Not used'
+			ELSE 'Used'
+		END AS device_status
 	FROM B_range_plc_class t3
 	LEFT JOIN (
 		SELECT
